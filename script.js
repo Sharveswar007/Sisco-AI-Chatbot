@@ -167,12 +167,23 @@ async function sendMessage() {
     // Call the Netlify Serverless Function instead of Groq directly
     const response = await fetch("/.netlify/functions/chat", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         messages: session.messages
       })
     });
 
     const data = await response.json();
+    
+    if (!response.ok) {
+      console.error("API Error:", data);
+      const errorMsg = data.error ? (typeof data.error === 'string' ? data.error : JSON.stringify(data.error)) : "Unknown error occurred";
+      displayMessage("bot", `Sorry, I encountered an error: ${errorMsg}`);
+      return;
+    }
+
     const botReply = data.choices?.[0]?.message?.content || "Sorry, I didn’t get that.";
     displayMessage("bot", botReply);
 
@@ -180,7 +191,7 @@ async function sendMessage() {
     saveSessions();
   } catch (error) {
     console.error("Error:", error);
-    displayMessage("bot", "Oops! Something went wrong.");
+    displayMessage("bot", "Oops! Something went wrong communicating with the server.");
   }
 }
 
